@@ -1,0 +1,250 @@
+// DevTracker - Esquema Prisma
+// Modelos mapeados desde src/app/models del frontend.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------- Enums ----------
+
+enum Recurso {
+  tareas
+  proyectos
+  usuarios
+  roles
+  planning
+  calendario
+  tablero
+  reportes
+}
+
+enum Accion {
+  leer
+  crear
+  editar
+  eliminar
+}
+
+enum Complejidad {
+  Simple
+  Media
+  Compleja
+}
+
+enum CanalChat {
+  general
+  privado
+  grupo
+}
+
+enum TipoNotificacion {
+  info
+  exito
+  alerta
+  error
+}
+
+// ---------- RBAC ----------
+
+// Rol dinámico. `sistema` marca los roles sembrados (el super-admin no se renombra ni elimina).
+model Rol {
+  id        String      @id
+  nombre    String      @unique
+  sistema   Boolean     @default(false)
+  createdAt DateTime    @default(now())
+  usuarios  User[]
+  permisos  RolPermiso[]
+
+  @@map("roles")
+}
+
+// Matriz de permisos: una fila por (rol, recurso, accion).
+model RolPermiso {
+  rolId   String
+  rol     Rol    @relation(fields: [rolId], references: [id], onDelete: Cascade)
+  recurso Recurso
+  accion  Accion
+
+  @@id([rolId, recurso, accion])
+  @@map("rol_permisos")
+}
+
+// ---------- Usuarios ----------
+
+model User {
+  id               String            @id
+  usuario          String
+  correo           String            @unique
+  claveHash        String
+  rolId            String
+  rol              Rol               @relation(fields: [rolId], references: [id])
+  nombres          String?
+  apellidos        String?
+  cedula           String?
+  telefono         String?
+  telefonoContacto String?
+  direccion        String?
+  // Foto de perfil (data URL) y curriculum (JSON), igual que el modelo actual.
+  foto             String?
+  curriculum       Json?
+  createdAt        DateTime          @default(now())
+
+  plannings        Planning[]
+  mensajes         Mensaje[]         @relation("MensajeAutor")
+  mensajesRecibidos Mensaje[]        @relation("MensajeDestino")
+  notificaciones   Notificacion[]
+  refreshTokens    RefreshToken[]
+  equipos          EquipoProyecto[]
+  lecturas         MensajeLeido[]
+
+  @@unique([usuario, correo])
+  @@map("usuarios")
+}
+
+// ---------- Kanban ----------
+
+// Columna del tablero. Las sembradas usan ids como slug ('desarrollo', 'calidad', 'produccion').
+model Columna {
+  id        String     @id
+  nombre    String
+  orden     Int
+  color     String
+  createdAt DateTime   @default(now())
+  proyectos Proyecto[]
+
+  @@map("columnas")
+}
+
+model Proyecto {
+  id            String   @id
+  nombre        String
+  descripcion   String?
+  cliente       String?
+  status        String?
+  prioridad     String?
+  columnaId     String
+  columna       Columna  @relation(fields: [columnaId], references: [id])
+  // Fechas como 'YYYY-MM-DD' (el frontend compara strings ISO, no Date).
+  fechaDesde    String?
+  fechaHasta    String?
+  documentacion String?
+  createdAt     DateTime @default(now())
+
+  plannings     Planning[]
+  equipos       EquipoProyecto[]
+  mensajes      Mensaje[]     @relation("MensajeProyecto")
+
+  @@map("proyectos")
+}
+
+// ---------- Planning / Tareas ----------
+
+model Planning {
+  id          String         @id
+  // Fecha del planning como 'YYYY-MM-DD'.
+  fecha       String
+  proyectoId  String
+  proyecto    Proyecto       @relation(fields: [proyectoId], references: [id], onDelete: Cascade)
+  descripcion String?
+  // Usuario que creó el planning (para productividad por usuario).
+  usuarioId   String?
+  usuario     User?          @relation(fields: [usuarioId], references: [id], onDelete: SetNull)
+  createdAt   DateTime       @default(now())
+  tareas      PlanningTask[]
+
+  @@map("plannings")
+}
+
+// Tareas normalizadas del planning (antes embebidas en JSON). `orden` preserva el drag & drop.
+model PlanningTask {
+  id          String      @id
+  planningId  String
+  planning    Planning    @relation(fields: [planningId], references: [id], onDelete: Cascade)
+  tarea       String
+  complejidad Complejidad
+  completada  Boolean     @default(false)
+  orden       Int         @default(0)
+  createdAt   DateTime    @default(now())
+
+  @@map("planning_tareas")
+}
+
+// ---------- Equipo (N:N proyecto-usuario) ----------
+
+model EquipoProyecto {
+  proyectoId String
+  proyecto   Proyecto @relation(fields: [proyectoId], references: [id], onDelete: Cascade)
+  usuarioId  String
+  usuario    User     @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  @@id([proyectoId, usuarioId])
+  @@map("equipo_proyecto")
+}
+
+// ---------- Chat ----------
+
+model Mensaje {
+  id         String     @id
+  canal      CanalChat
+  autorId    String
+  autor      User       @relation("MensajeAutor", fields: [autorId], references: [id], onDelete: Cascade)
+  // Requerido cuando canal === 'privado'.
+  destinoId  String?
+  destino    User?      @relation("MensajeDestino", fields: [destinoId], references: [id], onDelete: Cascade)
+  // Requerido cuando canal === 'grupo'.
+  proyectoId String?
+  proyecto   Proyecto?  @relation("MensajeProyecto", fields: [proyectoId], references: [id], onDelete: Cascade)
+  texto      String
+  fecha      DateTime   @default(now())
+  lecturas   MensajeLeido[]
+
+  @@index([canal, destinoId])
+  @@map("mensajes")
+}
+
+// Confirmación de lectura por usuario (en vez de un booleano global).
+model MensajeLeido {
+  mensajeId String
+  mensaje   Mensaje @relation(fields: [mensajeId], references: [id], onDelete: Cascade)
+  usuarioId String
+  usuario   User    @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  leidoEn   DateTime @default(now())
+
+  @@id([mensajeId, usuarioId])
+  @@map("mensajes_leidos")
+}
+
+// ---------- Notificaciones ----------
+
+model Notificacion {
+  id          String           @id
+  usuarioId   String
+  usuario     User             @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  tipo        TipoNotificacion
+  leida       Boolean          @default(false)
+  descripcion String
+  fecha       DateTime         @default(now())
+  url         String?
+
+  @@map("notificaciones")
+}
+
+// ---------- Auth (refresh tokens revocables) ----------
+
+model RefreshToken {
+  id          String    @id @default(uuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash   String    @unique
+  expiresAt   DateTime
+  revocadoAt  DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@index([userId])
+  @@map("refresh_tokens")
+}
