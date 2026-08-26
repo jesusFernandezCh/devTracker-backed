@@ -11,6 +11,8 @@ import { PlaningsModule } from './planings/planings.module';
 import { EquipoModule } from './equipo/equipo.module';
 import { NotificacionesModule } from './notificaciones/notificaciones.module';
 import { ChatModule } from './chat/chat.module';
+import { ClientesModule } from './clientes/clientes.module';
+import { DocumentosModule } from './documentos/documentos.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 
@@ -28,6 +30,8 @@ import { AppService } from './app.service';
     EquipoModule,
     NotificacionesModule,
     ChatModule,
+    ClientesModule,
+    DocumentosModule,
   ],
   controllers: [AppController],
   providers: [AppService],

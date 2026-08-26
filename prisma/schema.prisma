@@ -53,10 +53,10 @@ enum TipoNotificacion {
 
 // Rol dinámico. `sistema` marca los roles sembrados (el super-admin no se renombra ni elimina).
 model Rol {
-  id        String      @id
-  nombre    String      @unique
-  sistema   Boolean     @default(false)
-  createdAt DateTime    @default(now())
+  id        String       @id
+  nombre    String       @unique
+  sistema   Boolean      @default(false)
+  createdAt DateTime     @default(now())
   usuarios  User[]
   permisos  RolPermiso[]
 
@@ -66,7 +66,7 @@ model Rol {
 // Matriz de permisos: una fila por (rol, recurso, accion).
 model RolPermiso {
   rolId   String
-  rol     Rol    @relation(fields: [rolId], references: [id], onDelete: Cascade)
+  rol     Rol     @relation(fields: [rolId], references: [id], onDelete: Cascade)
   recurso Recurso
   accion  Accion
 
@@ -77,12 +77,12 @@ model RolPermiso {
 // ---------- Usuarios ----------
 
 model User {
-  id               String            @id
+  id               String   @id
   usuario          String
-  correo           String            @unique
+  correo           String   @unique
   claveHash        String
   rolId            String
-  rol              Rol               @relation(fields: [rolId], references: [id])
+  rol              Rol      @relation(fields: [rolId], references: [id])
   nombres          String?
   apellidos        String?
   cedula           String?
@@ -92,15 +92,16 @@ model User {
   // Foto de perfil (data URL) y curriculum (JSON), igual que el modelo actual.
   foto             String?
   curriculum       Json?
-  createdAt        DateTime          @default(now())
+  createdAt        DateTime @default(now())
 
-  plannings        Planning[]
-  mensajes         Mensaje[]         @relation("MensajeAutor")
+  plannings         Planning[]
+  mensajes          Mensaje[]        @relation("MensajeAutor")
   mensajesRecibidos Mensaje[]        @relation("MensajeDestino")
-  notificaciones   Notificacion[]
-  refreshTokens    RefreshToken[]
-  equipos          EquipoProyecto[]
-  lecturas         MensajeLeido[]
+  notificaciones    Notificacion[]
+  refreshTokens     RefreshToken[]
+  equipos           EquipoProyecto[]
+  lecturas          MensajeLeido[]
+  documentos        Documento[]
 
   @@unique([usuario, correo])
   @@map("usuarios")
@@ -135,9 +136,10 @@ model Proyecto {
   documentacion String?
   createdAt     DateTime @default(now())
 
-  plannings     Planning[]
-  equipos       EquipoProyecto[]
-  mensajes      Mensaje[]     @relation("MensajeProyecto")
+  plannings  Planning[]
+  equipos    EquipoProyecto[]
+  mensajes   Mensaje[]        @relation("MensajeProyecto")
+  documentos Documento[]
 
   @@map("proyectos")
 }
@@ -189,18 +191,18 @@ model EquipoProyecto {
 // ---------- Chat ----------
 
 model Mensaje {
-  id         String     @id
+  id         String         @id
   canal      CanalChat
   autorId    String
-  autor      User       @relation("MensajeAutor", fields: [autorId], references: [id], onDelete: Cascade)
+  autor      User           @relation("MensajeAutor", fields: [autorId], references: [id], onDelete: Cascade)
   // Requerido cuando canal === 'privado'.
   destinoId  String?
-  destino    User?      @relation("MensajeDestino", fields: [destinoId], references: [id], onDelete: Cascade)
+  destino    User?          @relation("MensajeDestino", fields: [destinoId], references: [id], onDelete: Cascade)
   // Requerido cuando canal === 'grupo'.
   proyectoId String?
-  proyecto   Proyecto?  @relation("MensajeProyecto", fields: [proyectoId], references: [id], onDelete: Cascade)
+  proyecto   Proyecto?      @relation("MensajeProyecto", fields: [proyectoId], references: [id], onDelete: Cascade)
   texto      String
-  fecha      DateTime   @default(now())
+  fecha      DateTime       @default(now())
   lecturas   MensajeLeido[]
 
   @@index([canal, destinoId])
@@ -210,9 +212,9 @@ model Mensaje {
 // Confirmación de lectura por usuario (en vez de un booleano global).
 model MensajeLeido {
   mensajeId String
-  mensaje   Mensaje @relation(fields: [mensajeId], references: [id], onDelete: Cascade)
+  mensaje   Mensaje  @relation(fields: [mensajeId], references: [id], onDelete: Cascade)
   usuarioId String
-  usuario   User    @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  usuario   User     @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
   leidoEn   DateTime @default(now())
 
   @@id([mensajeId, usuarioId])
@@ -237,14 +239,43 @@ model Notificacion {
 // ---------- Auth (refresh tokens revocables) ----------
 
 model RefreshToken {
-  id          String    @id @default(uuid())
-  userId      String
-  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  tokenHash   String    @unique
-  expiresAt   DateTime
-  revocadoAt  DateTime?
-  createdAt   DateTime  @default(now())
+  id         String    @id @default(uuid())
+  userId     String
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash  String    @unique
+  expiresAt  DateTime
+  revocadoAt DateTime?
+  createdAt  DateTime  @default(now())
 
   @@index([userId])
   @@map("refresh_tokens")
+}
+
+// ---------- Clientes ----------
+
+model Cliente {
+  id        String   @id
+  nombre    String   @unique
+  createdAt DateTime @default(now())
+
+  @@map("clientes")
+}
+
+// ---------- Documentos ----------
+
+model Documento {
+  id                String   @id
+  nombre            String
+  descripcion       String?
+  archivoBase64     String
+  tipoMime          String
+  proyectoId        String
+  proyecto          Proyecto @relation(fields: [proyectoId], references: [id], onDelete: Cascade)
+  fechaCreacion     DateTime @default(now())
+  fechaModificacion DateTime @default(now())
+  autorId           String
+  autor             User     @relation(fields: [autorId], references: [id], onDelete: Cascade)
+
+  @@index([proyectoId])
+  @@map("documentos")
 }
