@@ -110,19 +110,18 @@ export class AuthService {
     }
     return {
       ...this.aPublico(usuario),
-      permisos: await this.matrizPermisos(),
+      permisos: await this.matrizDelUsuario(usuario.rolId),
     };
   }
 
-  /** Matriz completa de permisos: Record<rolId, Record<recurso, accion[]>>. */
-  async matrizPermisos(): Promise<Record<string, Partial<Record<Recurso, Accion[]>>>> {
-    const filas = await this.prisma.rolPermiso.findMany();
-    const matriz: Record<string, Partial<Record<Recurso, Accion[]>>> = {};
-    for (const { rolId, recurso, accion } of filas) {
-      (matriz[rolId] ??= {});
-      (matriz[rolId][recurso] ??= []).push(accion);
+  /** Permisos de un rol específico: Record<recurso, accion[]>. */
+  async matrizDelUsuario(rolId: string): Promise<Partial<Record<Recurso, Accion[]>>> {
+    const filas = await this.prisma.rolPermiso.findMany({ where: { rolId } });
+    const permisos: Partial<Record<Recurso, Accion[]>> = {};
+    for (const { recurso, accion } of filas) {
+      (permisos[recurso] ??= []).push(accion);
     }
-    return matriz;
+    return permisos;
   }
 
   private async generarSesion(

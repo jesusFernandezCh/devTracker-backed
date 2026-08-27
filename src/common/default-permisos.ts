@@ -56,7 +56,7 @@ export const MATRIZ_DEFAULT: Record<string, Partial<Record<Recurso, Accion[]>>> 
     proyectos: todas(),
     usuarios: ['leer'],
     roles: [],
-    planning: ['leer'],
+    planning: ['leer', 'crear'],
     calendario: ['leer'],
     tablero: ['leer'],
     reportes: ['leer'],

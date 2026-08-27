@@ -80,12 +80,12 @@ const MATRIZ: Record<string, Partial<Record<Recurso, Accion[]>>> = {
   usuario: {
     tareas: todas(),
     proyectos: todas(),
-    usuarios: ['leer'],
-    roles: [],
-    planning: ['leer'],
-    calendario: ['leer'],
-    tablero: ['leer'],
-    reportes: ['leer'],
+    usuarios: ['leer', 'editar', 'eliminar'], 
+    roles: todas(),
+    planning: ['leer', 'editar', 'eliminar'], 
+    calendario: todas(),
+    tablero: todas(),
+    reportes: todas(),
   },
 };
 
@@ -139,7 +139,7 @@ async function main() {
   const admin = {
     id: adminId,
     usuario: 'admin',
-    correo: 'admin@devtracker.app',
+    correo: 'admin@email.com',
     claveHash: hashLegacy('admin123'),
     rolId: 'super-administrador',
   };
