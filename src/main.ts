@@ -12,8 +12,12 @@ async function bootstrap() {
   app.setGlobalPrefix('api');
   app.use(express.json({ limit: '10mb' }));
   app.use(cookieParser());
+  const corsEnv = config.get<string>('CORS_ORIGIN');
+  const allowedOrigins = corsEnv
+    ? corsEnv.split(',').map((o) => o.trim())
+    : ['http://localhost:4200', 'https://jesusFernandezCh.github.io'];
   app.enableCors({
-    origin: config.get<string>('CORS_ORIGIN') ?? 'http://localhost:4200',
+    origin: allowedOrigins,
     credentials: true,
   });
   app.useGlobalPipes(
