@@ -139,7 +139,7 @@ async function main() {
   const admin = {
     id: adminId,
     usuario: 'admin',
-    correo: 'admin@email.com',
+    correo: 'admin@devtracker.app',
     claveHash: hashLegacy('admin123'),
     rolId: 'super-administrador',
   };
