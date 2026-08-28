@@ -13,13 +13,15 @@ async function bootstrap() {
   app.use(express.json({ limit: '10mb' }));
   app.use(cookieParser());
   const corsEnv = config.get<string>('CORS_ORIGIN');
-  const allowedOrigins = corsEnv
-    ? corsEnv.split(',').map((o) => o.trim())
-    : [
-        'http://localhost:4200',
-        'https://jesusFernandezCh.github.io',
-        'https://devtracker-p35s.onrender.com',
-      ];
+  const envOrigins = corsEnv
+    ? corsEnv.split(',').map((o) => o.trim()).filter(Boolean)
+    : [];
+  const defaultOrigins = [
+    'http://localhost:4200',
+    'https://jesusFernandezCh.github.io',
+    'https://devtracker-p35s.onrender.com',
+  ];
+  const allowedOrigins = Array.from(new Set([...defaultOrigins, ...envOrigins]));
   app.enableCors({
     origin: allowedOrigins,
     credentials: true,
