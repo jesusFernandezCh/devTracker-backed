@@ -11,10 +11,12 @@ export interface JwtPayload {
   rolId: string;
 }
 
-/** Extrae el usuario autenticado (payload JWT) del request. */
+/** Extrae el usuario autenticado (payload JWT) del request.
+ *  Si se pasa una clave (p.ej. @CurrentUser('sub')), retorna solo ese campo. */
 export const CurrentUser = createParamDecorator(
-  (_data: unknown, ctx: ExecutionContext): JwtPayload => {
+  (data: string | undefined, ctx: ExecutionContext) => {
     const request = ctx.switchToHttp().getRequest();
-    return request.user as JwtPayload;
+    const user = request.user as JwtPayload;
+    return data ? user?.[data] : user;
   },
 );

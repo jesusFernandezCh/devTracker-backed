@@ -1,6 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import express from 'express';
 import cookieParser from 'cookie-parser';
 import { AppModule } from './app.module';
 
@@ -9,6 +10,7 @@ async function bootstrap() {
   const config = app.get(ConfigService);
 
   app.setGlobalPrefix('api');
+  app.use(express.json({ limit: '10mb' }));
   app.use(cookieParser());
   app.enableCors({
     origin: config.get<string>('CORS_ORIGIN') ?? 'http://localhost:4200',
