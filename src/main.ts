@@ -15,7 +15,11 @@ async function bootstrap() {
   const corsEnv = config.get<string>('CORS_ORIGIN');
   const allowedOrigins = corsEnv
     ? corsEnv.split(',').map((o) => o.trim())
-    : ['http://localhost:4200', 'https://jesusFernandezCh.github.io'];
+    : [
+        'http://localhost:4200',
+        'https://jesusFernandezCh.github.io',
+        'https://devtracker-p35s.onrender.com',
+      ];
   app.enableCors({
     origin: allowedOrigins,
     credentials: true,
