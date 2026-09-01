@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Inject, Injectable, forwardRef } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { ChatGateway } from '../chat/chat.gateway';
 import { NotificacionesService } from '../notificaciones/notificaciones.service';
@@ -7,6 +7,7 @@ import { NotificacionesService } from '../notificaciones/notificaciones.service'
 export class EquipoService {
   constructor(
     private readonly prisma: PrismaService,
+    @Inject(forwardRef(() => ChatGateway))
     private readonly chatGateway: ChatGateway,
     private readonly notificacionesService: NotificacionesService,
   ) {}
