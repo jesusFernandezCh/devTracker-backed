@@ -9,9 +9,7 @@ services:
       - key: NODE_ENV
         value: production
       - key: DATABASE_URL
-        fromDatabase:
-          name: devtracker-db
-          property: connectionString
+        value: postgresql://devtracker:fTmtDWCyjPhaQU81yCctwQMXsQJS9eHd@dpg-da8taoqjnfac73c0r1q0-a/devtracker_woxn
       - key: JWT_ACCESS_SECRET
         generateValue: true
       - key: JWT_REFRESH_SECRET
@@ -22,9 +20,3 @@ services:
         value: 30
       - key: CORS_ORIGIN
         value: https://devtracker.onrender.com
-
-databases:
-  - name: devtracker-db
-    plan: free
-    databaseName: devtracker
-    ipAllowList: []
