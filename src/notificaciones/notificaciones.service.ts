@@ -2,10 +2,14 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { CrearNotificacionDto } from './dto/notificacion.dto';
+import { ChatGateway } from '../chat/chat.gateway';
 
 @Injectable()
 export class NotificacionesService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly chatGateway: ChatGateway,
+  ) {}
 
   async findAll(usuarioId: string) {
     return this.prisma.notificacion.findMany({
@@ -22,7 +26,7 @@ export class NotificacionesService {
   }
 
   async crear(usuarioId: string, dto: CrearNotificacionDto) {
-    return this.prisma.notificacion.create({
+    const notificacion = await this.prisma.notificacion.create({
       data: {
         id: randomUUID(),
         usuarioId,
@@ -31,6 +35,8 @@ export class NotificacionesService {
         url: dto.url,
       },
     });
+    this.chatGateway.emitirNotificacionNueva(usuarioId, notificacion);
+    return notificacion;
   }
 
   async marcarLeida(id: string, usuarioId: string) {

@@ -94,4 +94,14 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
     this.server.emit('chat:escribiendo', evento);
   }
+
+  /** Notifica a todos los clientes que el equipo de un proyecto cambió. */
+  emitirEquipoCambiado(proyectoId: string, usuarioIds: string[], usuarioAgregado?: string) {
+    this.server.emit('equipo:cambiado', { proyectoId, usuarioIds, usuarioAgregado });
+  }
+
+  /** Notifica a un usuario específico que tiene una notificación nueva. */
+  emitirNotificacionNueva(usuarioId: string, notificacion: unknown) {
+    this.server.to(`user:${usuarioId}`).emit('notificacion:nueva', notificacion);
+  }
 }

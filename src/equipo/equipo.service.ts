@@ -1,9 +1,13 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { ChatGateway } from '../chat/chat.gateway';
 
 @Injectable()
 export class EquipoService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly chatGateway: ChatGateway,
+  ) {}
 
   /** Mapa completo proyecto → ids de usuarios (para EquipoService del frontend). */
   async mapa(): Promise<Record<string, string[]>> {
@@ -36,14 +40,18 @@ export class EquipoService {
       create: { proyectoId, usuarioId },
       update: {},
     });
-    return this.miembrosDe(proyectoId);
+    const miembros = await this.miembrosDe(proyectoId);
+    this.chatGateway.emitirEquipoCambiado(proyectoId, miembros, usuarioId);
+    return miembros;
   }
 
   async quitar(proyectoId: string, usuarioId: string) {
     await this.prisma.equipoProyecto.deleteMany({
       where: { proyectoId, usuarioId },
     });
-    return this.miembrosDe(proyectoId);
+    const miembros = await this.miembrosDe(proyectoId);
+    this.chatGateway.emitirEquipoCambiado(proyectoId, miembros);
+    return miembros;
   }
 
   async establecer(proyectoId: string, usuarioIds: string[]) {
@@ -56,7 +64,9 @@ export class EquipoService {
         data: usuarioIds.map((usuarioId) => ({ proyectoId, usuarioId })),
       }),
     ]);
-    return this.miembrosDe(proyectoId);
+    const miembros = await this.miembrosDe(proyectoId);
+    this.chatGateway.emitirEquipoCambiado(proyectoId, miembros);
+    return miembros;
   }
 
   private async validarExistencias(proyectoId: string, usuarioId: string) {
