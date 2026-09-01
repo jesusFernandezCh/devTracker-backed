@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Inject, Injectable, NotFoundException, forwardRef } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { CrearNotificacionDto } from './dto/notificacion.dto';
@@ -8,6 +8,7 @@ import { ChatGateway } from '../chat/chat.gateway';
 export class NotificacionesService {
   constructor(
     private readonly prisma: PrismaService,
+    @Inject(forwardRef(() => ChatGateway))
     private readonly chatGateway: ChatGateway,
   ) {}
 
