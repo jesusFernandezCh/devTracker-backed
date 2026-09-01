@@ -15,10 +15,14 @@ import {
   ReordenarColumnasDto,
 } from './dto/columna.dto';
 import { RequirePermiso } from '../common/decorators/permisos.decorator';
+import { ChatGateway } from '../chat/chat.gateway';
 
 @Controller('columnas')
 export class ColumnasController {
-  constructor(private readonly columnasService: ColumnasService) {}
+  constructor(
+    private readonly columnasService: ColumnasService,
+    private readonly chatGateway: ChatGateway,
+  ) {}
 
   @Get()
   @RequirePermiso('leer', 'tablero')
@@ -28,20 +32,26 @@ export class ColumnasController {
 
   @Post()
   @RequirePermiso('crear', 'tablero')
-  crear(@Body() dto: CrearColumnaDto) {
-    return this.columnasService.crear(dto);
+  async crear(@Body() dto: CrearColumnaDto) {
+    const columna = await this.columnasService.crear(dto);
+    this.chatGateway.emitirColumnaCreada(columna);
+    return columna;
   }
 
   @Patch('reordenar')
   @RequirePermiso('editar', 'tablero')
-  reordenar(@Body() dto: ReordenarColumnasDto) {
-    return this.columnasService.reordenar(dto);
+  async reordenar(@Body() dto: ReordenarColumnasDto) {
+    const columnas = await this.columnasService.reordenar(dto);
+    this.chatGateway.emitirColumnasReordenadas(columnas);
+    return columnas;
   }
 
   @Patch(':id')
   @RequirePermiso('editar', 'tablero')
-  actualizar(@Param('id') id: string, @Body() dto: ActualizarColumnaDto) {
-    return this.columnasService.actualizar(id, dto);
+  async actualizar(@Param('id') id: string, @Body() dto: ActualizarColumnaDto) {
+    const columna = await this.columnasService.actualizar(id, dto);
+    this.chatGateway.emitirColumnaActualizada(columna);
+    return columna;
   }
 
   @Delete(':id')
@@ -49,5 +59,6 @@ export class ColumnasController {
   @HttpCode(204)
   async eliminar(@Param('id') id: string) {
     await this.columnasService.eliminar(id);
+    this.chatGateway.emitirColumnaEliminada(id);
   }
 }

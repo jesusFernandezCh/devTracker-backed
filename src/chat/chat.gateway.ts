@@ -11,6 +11,8 @@ import { Server, Socket } from 'socket.io';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { ChatService } from './chat.service';
+import { EquipoService } from '../equipo/equipo.service';
+import { ROL_SUPER_ADMIN_ID } from '../constants';
 import type { LeidoPayload, MensajeSerializado } from './chat.service';
 import type { JwtPayload } from '../common/decorators/auth.decorators';
 
@@ -24,6 +26,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     private readonly jwt: JwtService,
     private readonly config: ConfigService,
     private readonly chatService: ChatService,
+    private readonly equipoService: EquipoService,
   ) {}
 
   async handleConnection(client: Socket) {
@@ -36,6 +39,13 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       });
       client.data.userId = payload.sub;
       client.join(`user:${payload.sub}`);
+
+      if (payload.rolId === 'administrador' || payload.rolId === ROL_SUPER_ADMIN_ID) {
+        const mapa = await this.equipoService.mapa();
+        for (const proyectoId of Object.keys(mapa)) {
+          client.join(`proyecto:${proyectoId}`);
+        }
+      }
     } catch {
       client.disconnect(true);
     }
@@ -103,5 +113,49 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   /** Notifica a un usuario específico que tiene una notificación nueva. */
   emitirNotificacionNueva(usuarioId: string, notificacion: unknown) {
     this.server.to(`user:${usuarioId}`).emit('notificacion:nueva', notificacion);
+  }
+
+  // ─── Tablero / Proyectos / Columnas ────────────────────────────
+
+  emitirProyectoCreado(proyecto: unknown) {
+    this.server.emit('tablero:proyecto-creado', proyecto);
+  }
+
+  emitirProyectoActualizado(proyecto: unknown) {
+    this.server.emit('tablero:proyecto-actualizado', proyecto);
+  }
+
+  emitirProyectoEliminado(proyectoId: string) {
+    this.server.emit('tablero:proyecto-eliminado', { id: proyectoId });
+  }
+
+  emitirColumnaCreada(columna: unknown) {
+    this.server.emit('tablero:columna-creada', columna);
+  }
+
+  emitirColumnaActualizada(columna: unknown) {
+    this.server.emit('tablero:columna-actualizada', columna);
+  }
+
+  emitirColumnaEliminada(columnaId: string) {
+    this.server.emit('tablero:columna-eliminada', { id: columnaId });
+  }
+
+  emitirColumnasReordenadas(columnas: unknown[]) {
+    this.server.emit('tablero:columnas-reordenadas', columnas);
+  }
+
+  // ─── Plannings / Tareas ────────────────────────────────────────
+
+  emitirPlanningCreado(planning: unknown, proyectoId: string) {
+    this.server.to(`proyecto:${proyectoId}`).emit('planning:creado', planning);
+  }
+
+  emitirPlanningActualizado(planning: unknown, proyectoId: string) {
+    this.server.to(`proyecto:${proyectoId}`).emit('planning:actualizado', planning);
+  }
+
+  emitirPlanningEliminado(planningId: string, proyectoId: string) {
+    this.server.to(`proyecto:${proyectoId}`).emit('planning:eliminado', { id: planningId });
   }
 }
