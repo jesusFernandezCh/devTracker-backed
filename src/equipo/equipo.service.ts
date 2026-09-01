@@ -1,12 +1,14 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { ChatGateway } from '../chat/chat.gateway';
+import { NotificacionesService } from '../notificaciones/notificaciones.service';
 
 @Injectable()
 export class EquipoService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly chatGateway: ChatGateway,
+    private readonly notificacionesService: NotificacionesService,
   ) {}
 
   /** Mapa completo proyecto → ids de usuarios (para EquipoService del frontend). */
@@ -42,6 +44,7 @@ export class EquipoService {
     });
     const miembros = await this.miembrosDe(proyectoId);
     this.chatGateway.emitirEquipoCambiado(proyectoId, miembros, usuarioId);
+    await this.notificarUsuario(usuarioId, proyectoId, 'agregado al');
     return miembros;
   }
 
@@ -51,6 +54,7 @@ export class EquipoService {
     });
     const miembros = await this.miembrosDe(proyectoId);
     this.chatGateway.emitirEquipoCambiado(proyectoId, miembros);
+    await this.notificarUsuario(usuarioId, proyectoId, 'quitado del');
     return miembros;
   }
 
@@ -67,6 +71,17 @@ export class EquipoService {
     const miembros = await this.miembrosDe(proyectoId);
     this.chatGateway.emitirEquipoCambiado(proyectoId, miembros);
     return miembros;
+  }
+
+  private async notificarUsuario(usuarioId: string, proyectoId: string, accion: string) {
+    const proyecto = await this.prisma.proyecto.findUnique({ where: { id: proyectoId } });
+    const nombreProyecto = proyecto?.nombre ?? 'Proyecto';
+    const notificacion = await this.notificacionesService.crear(usuarioId, {
+      tipo: 'info',
+      descripcion: `Has sido ${accion} equipo de «${nombreProyecto}»`,
+      url: '/proyectos',
+    });
+    this.chatGateway.emitirNotificacionNueva(usuarioId, notificacion);
   }
 
   private async validarExistencias(proyectoId: string, usuarioId: string) {

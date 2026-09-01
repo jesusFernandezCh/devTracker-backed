@@ -19,6 +19,7 @@ async function bootstrap() {
   const defaultOrigins = [
     'http://localhost:4200',
     'https://jesusFernandezCh.github.io',
+    'https://devtracker.onrender.com',
     'https://devtracker-p35s.onrender.com',
   ];
   const allowedOrigins = Array.from(new Set([...defaultOrigins, ...envOrigins]));
