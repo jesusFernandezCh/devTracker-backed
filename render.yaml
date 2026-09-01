@@ -9,7 +9,7 @@ services:
       - key: NODE_ENV
         value: production
       - key: DATABASE_URL
-        value: postgresql://devtracker:fTmtDWCyjPhaQU81yCctwQMXsQJS9eHd@dpg-da8taoqjnfac73c0r1q0-a/devtracker_woxn
+        value: postgresql://devtracker:fTmtDWCyjPhaQU81yCctwQMXsQJS9eHd@dpg-da8taoqjnfac73c0r1q0-a/devtracker_woxn?sslmode=require
       - key: JWT_ACCESS_SECRET
         generateValue: true
       - key: JWT_REFRESH_SECRET
