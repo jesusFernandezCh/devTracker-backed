@@ -65,4 +65,8 @@ export class NotificacionesService {
     if (!notificacion) throw new NotFoundException('Notificación no encontrada');
     await this.prisma.notificacion.delete({ where: { id } });
   }
+
+  async eliminarTodas(usuarioId: string) {
+    await this.prisma.notificacion.deleteMany({ where: { usuarioId } });
+  }
 }
