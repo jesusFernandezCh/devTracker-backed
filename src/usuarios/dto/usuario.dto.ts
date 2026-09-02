@@ -80,6 +80,10 @@ export class ActualizarUsuarioDto {
 
   @IsOptional()
   @IsString()
+  estatus?: string;
+
+  @IsOptional()
+  @IsString()
   nombres?: string;
 
   @IsOptional()
@@ -108,4 +112,10 @@ export class ActualizarUsuarioDto {
 
   @IsOptional()
   curriculum?: unknown;
+}
+
+export class AprobarUsuarioDto {
+  @IsString()
+  @IsNotEmpty()
+  rolId: string;
 }

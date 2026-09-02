@@ -49,6 +49,12 @@ enum TipoNotificacion {
   error
 }
 
+enum EstatusUsuario {
+  pendiente
+  activo
+  suspendido
+}
+
 // ---------- RBAC ----------
 
 // Rol dinámico. `sistema` marca los roles sembrados (el super-admin no se renombra ni elimina).
@@ -77,12 +83,15 @@ model RolPermiso {
 // ---------- Usuarios ----------
 
 model User {
-  id               String   @id
+  id               String           @id
   usuario          String
-  correo           String   @unique
+  correo           String           @unique
   claveHash        String
   rolId            String
-  rol              Rol      @relation(fields: [rolId], references: [id])
+  rol              Rol              @relation(fields: [rolId], references: [id])
+  estatus          EstatusUsuario   @default(activo)
+  proveedor        String?
+  usuarioExternoId String?
   nombres          String?
   apellidos        String?
   cedula           String?
@@ -92,7 +101,7 @@ model User {
   // Foto de perfil (data URL) y curriculum (JSON), igual que el modelo actual.
   foto             String?
   curriculum       Json?
-  createdAt        DateTime @default(now())
+  createdAt        DateTime         @default(now())
 
   plannings         Planning[]
   mensajes          Mensaje[]        @relation("MensajeAutor")
@@ -278,4 +287,19 @@ model Documento {
 
   @@index([proyectoId])
   @@map("documentos")
+}
+
+// ---------- Registro / Invitaciones ----------
+
+model Invitacion {
+  id          String    @id @default(uuid())
+  correo      String    @unique
+  token       String    @unique
+  rolId       String?
+  invitadoPor String
+  expiraEn    DateTime
+  usadoEn     DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@map("invitaciones")
 }
