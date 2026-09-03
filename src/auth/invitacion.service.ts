@@ -37,6 +37,13 @@ export class InvitacionService {
     const token = randomBytes(32).toString('hex');
     const expiraEn = new Date(Date.now() + INVITACION_TTL_HORAS * 60 * 60 * 1000);
 
+    const invitador = await this.prisma.user.findUnique({
+      where: { id: invitadoPorId },
+    });
+    const nombreInvitador = invitador?.usuario ?? 'Un administrador';
+
+    await this.emailService.enviarInvitacion(correo, token, nombreInvitador);
+
     const invitacion = await this.prisma.invitacion.upsert({
       where: { correo },
       create: {
@@ -54,13 +61,6 @@ export class InvitacionService {
         usadoEn: null,
       },
     });
-
-    const invitador = await this.prisma.user.findUnique({
-      where: { id: invitadoPorId },
-    });
-    const nombreInvitador = invitador?.usuario ?? 'Un administrador';
-
-    await this.emailService.enviarInvitacion(correo, token, nombreInvitador);
 
     return {
       id: invitacion.id,

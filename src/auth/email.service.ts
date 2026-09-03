@@ -19,7 +19,7 @@ export class EmailService {
       secure: false,
       auth: {
         user: this.config.get<string>('SMTP_USER'),
-        pass: this.config.get<string>('SMTP_PASS'),
+        pass: this.config.get<string>('SMTP_PASS')?.replace(/\s/g, ''),
       },
     });
   }
@@ -65,6 +65,7 @@ export class EmailService {
       this.logger.log(`Correo de invitación enviado a ${correo}`);
     } catch (error) {
       this.logger.error(`Error enviando correo a ${correo}: ${error}`);
+      throw error;
     }
   }
 
@@ -100,6 +101,7 @@ export class EmailService {
       this.logger.log(`Correo de bienvenida enviado a ${correo}`);
     } catch (error) {
       this.logger.error(`Error enviando correo de bienvenida a ${correo}: ${error}`);
+      throw error;
     }
   }
 }
