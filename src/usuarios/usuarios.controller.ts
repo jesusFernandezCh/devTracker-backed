@@ -29,6 +29,12 @@ export class UsuariosController {
     return this.usuariosService.findAll();
   }
 
+  @Get('invitaciones')
+  @RequirePermiso('leer', 'usuarios')
+  listarInvitaciones() {
+    return this.invitacionService.findAll();
+  }
+
   @Get(':id')
   @RequirePermiso('leer', 'usuarios')
   findOne(@Param('id') id: string) {
@@ -47,6 +53,12 @@ export class UsuariosController {
     return this.invitacionService.invitar(dto.correo, dto.rolId, user.sub);
   }
 
+  @Post('invitaciones/:id/reenviar')
+  @RequirePermiso('editar', 'usuarios')
+  async reenviarInvitacion(@Param('id') id: string) {
+    return this.invitacionService.reenviar(id);
+  }
+
   @Patch(':id')
   @RequirePermiso('editar', 'usuarios')
   actualizar(@Param('id') id: string, @Body() dto: ActualizarUsuarioDto) {
@@ -57,6 +69,13 @@ export class UsuariosController {
   @RequirePermiso('editar', 'usuarios')
   aprobar(@Param('id') id: string, @Body() dto: AprobarUsuarioDto) {
     return this.usuariosService.aprobar(id, dto.rolId);
+  }
+
+  @Delete('invitaciones/:id')
+  @RequirePermiso('eliminar', 'usuarios')
+  @HttpCode(204)
+  async cancelarInvitacion(@Param('id') id: string) {
+    await this.invitacionService.cancelar(id);
   }
 
   @Delete(':id')

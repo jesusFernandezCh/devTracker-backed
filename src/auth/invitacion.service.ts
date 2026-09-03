@@ -96,4 +96,53 @@ export class InvitacionService {
       data: { usadoEn: new Date() },
     });
   }
+
+  async findAll() {
+    return this.prisma.invitacion.findMany({
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async cancelar(id: string) {
+    const invitacion = await this.prisma.invitacion.findUnique({ where: { id } });
+    if (!invitacion) {
+      throw new NotFoundException('Invitación no encontrada');
+    }
+    if (invitacion.usadoEn) {
+      throw new BadRequestException('No se puede cancelar una invitación ya utilizada');
+    }
+    await this.prisma.invitacion.delete({ where: { id } });
+  }
+
+  async reenviar(id: string) {
+    const invitacion = await this.prisma.invitacion.findUnique({ where: { id } });
+    if (!invitacion) {
+      throw new NotFoundException('Invitación no encontrada');
+    }
+    if (invitacion.usadoEn) {
+      throw new BadRequestException('No se puede reenviar una invitación ya utilizada');
+    }
+
+    const token = randomBytes(32).toString('hex');
+    const expiraEn = new Date(Date.now() + INVITACION_TTL_HORAS * 60 * 60 * 1000);
+
+    const actualizada = await this.prisma.invitacion.update({
+      where: { id },
+      data: { token, expiraEn },
+    });
+
+    const invitador = await this.prisma.user.findUnique({
+      where: { id: actualizada.invitadoPor },
+    });
+    const nombreInvitador = invitador?.usuario ?? 'Un administrador';
+
+    await this.emailService.enviarInvitacion(actualizada.correo, token, nombreInvitador);
+
+    return {
+      id: actualizada.id,
+      correo: actualizada.correo,
+      expiraEn: actualizada.expiraEn,
+      createdAt: actualizada.createdAt,
+    };
+  }
 }
