@@ -1,27 +1,18 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { createTransport } from 'nodemailer';
+import { Resend } from 'resend';
 
 @Injectable()
 export class EmailService {
   private readonly logger = new Logger(EmailService.name);
-  private readonly transporter;
+  private readonly resend: Resend;
   private readonly frontendUrl: string;
   private readonly fromAddress: string;
 
   constructor(private readonly config: ConfigService) {
     this.frontendUrl = this.config.get<string>('FRONTEND_URL') ?? 'http://localhost:4200';
-    this.fromAddress = this.config.get<string>('SMTP_FROM') ?? 'no-reply@devtracker.app';
-
-    this.transporter = createTransport({
-      host: this.config.get<string>('SMTP_HOST') ?? 'smtp.gmail.com',
-      port: Number(this.config.get<string>('SMTP_PORT') ?? 587),
-      secure: false,
-      auth: {
-        user: this.config.get<string>('SMTP_USER'),
-        pass: this.config.get<string>('SMTP_PASS')?.replace(/\s/g, ''),
-      },
-    });
+    this.fromAddress = this.config.get<string>('RESEND_FROM') ?? 'DevTracker <onboarding@resend.dev>';
+    this.resend = new Resend(this.config.get<string>('RESEND_API_KEY'));
   }
 
   async enviarInvitacion(
@@ -55,18 +46,19 @@ export class EmailService {
       </div>
     `;
 
-    try {
-      await this.transporter.sendMail({
-        from: this.fromAddress,
-        to: correo,
-        subject: 'Invitación a DevTracker',
-        html,
-      });
-      this.logger.log(`Correo de invitación enviado a ${correo}`);
-    } catch (error) {
-      this.logger.error(`Error enviando correo a ${correo}: ${error}`);
+    const { error } = await this.resend.emails.send({
+      from: this.fromAddress,
+      to: [correo],
+      subject: 'Invitación a DevTracker',
+      html,
+    });
+
+    if (error) {
+      this.logger.error(`Error enviando correo a ${correo}: ${error.message}`);
       throw error;
     }
+
+    this.logger.log(`Correo de invitación enviado a ${correo}`);
   }
 
   async enviarBienvenida(correo: string, usuario: string): Promise<void> {
@@ -91,17 +83,18 @@ export class EmailService {
       </div>
     `;
 
-    try {
-      await this.transporter.sendMail({
-        from: this.fromAddress,
-        to: correo,
-        subject: 'Tu cuenta en DevTracker ha sido activada',
-        html,
-      });
-      this.logger.log(`Correo de bienvenida enviado a ${correo}`);
-    } catch (error) {
-      this.logger.error(`Error enviando correo de bienvenida a ${correo}: ${error}`);
+    const { error } = await this.resend.emails.send({
+      from: this.fromAddress,
+      to: [correo],
+      subject: 'Tu cuenta en DevTracker ha sido activada',
+      html,
+    });
+
+    if (error) {
+      this.logger.error(`Error enviando correo de bienvenida a ${correo}: ${error.message}`);
       throw error;
     }
+
+    this.logger.log(`Correo de bienvenida enviado a ${correo}`);
   }
 }

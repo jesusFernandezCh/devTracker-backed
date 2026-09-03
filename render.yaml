@@ -24,16 +24,10 @@ services:
         value: https://devtracker.onrender.com
       - key: API_URL
         value: https://devtracker-backed.onrender.com
-      - key: SMTP_HOST
+      - key: RESEND_API_KEY
         sync: false
-      - key: SMTP_PORT
-        value: 587
-      - key: SMTP_USER
-        sync: false
-      - key: SMTP_PASS
-        sync: false
-      - key: SMTP_FROM
-        value: no-reply@devtracker.app
+      - key: RESEND_FROM
+        value: DevTracker <onboarding@resend.dev>
       - key: GOOGLE_CLIENT_ID
         sync: false
       - key: GOOGLE_CLIENT_SECRET
