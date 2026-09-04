@@ -111,6 +111,7 @@ model User {
   equipos           EquipoProyecto[]
   lecturas          MensajeLeido[]
   documentos        Documento[]
+  eventosCalendario EventoCalendario[]
 
   @@unique([usuario, correo])
   @@map("usuarios")
@@ -287,6 +288,25 @@ model Documento {
 
   @@index([proyectoId])
   @@map("documentos")
+}
+
+// ---------- Eventos de Calendario ----------
+
+model EventoCalendario {
+  id          String   @id @default(uuid())
+  titulo      String
+  descripcion String?
+  fechaInicio DateTime
+  fechaFin    DateTime
+  todoElDia   Boolean  @default(true)
+  categoria   String   @default("general")
+  color       String?  @default("#6366F1")
+  usuarioId   String
+  usuario     User     @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+
+  @@index([usuarioId])
+  @@map("eventos_calendario")
 }
 
 // ---------- Registro / Invitaciones ----------
