@@ -11,7 +11,7 @@ export class EmailService {
 
   constructor(private readonly config: ConfigService) {
     this.frontendUrl = this.config.get<string>('FRONTEND_URL') ?? 'http://localhost:4200';
-    this.fromAddress = this.config.get<string>('RESEND_FROM') ?? 'DevTracker <onboarding@resend.dev>';
+    this.fromAddress = this.config.get<string>('RESEND_FROM') ?? 'Sherman <sherman589@gmail.com>';
     this.resend = new Resend(this.config.get<string>('RESEND_API_KEY'));
   }
 

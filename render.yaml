@@ -27,7 +27,7 @@ services:
       - key: RESEND_API_KEY
         sync: false
       - key: RESEND_FROM
-        value: DevTracker <onboarding@resend.dev>
+        value: Sherman <sherman589@gmail.com>
       - key: GOOGLE_CLIENT_ID
         sync: false
       - key: GOOGLE_CLIENT_SECRET
