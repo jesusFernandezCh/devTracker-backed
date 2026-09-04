@@ -42,7 +42,13 @@ export class InvitacionService {
     });
     const nombreInvitador = invitador?.usuario ?? 'Un administrador';
 
-    await this.emailService.enviarInvitacion(correo, token, nombreInvitador);
+    let emailError: string | null = null;
+    try {
+      await this.emailService.enviarInvitacion(correo, token, nombreInvitador);
+    } catch (err: any) {
+      this.logger.warn(`No se pudo enviar email a ${correo}: ${err?.message ?? err}`);
+      emailError = err?.message ?? 'Error al enviar el correo';
+    }
 
     const invitacion = await this.prisma.invitacion.upsert({
       where: { correo },
@@ -67,6 +73,7 @@ export class InvitacionService {
       correo: invitacion.correo,
       expiraEn: invitacion.expiraEn,
       createdAt: invitacion.createdAt,
+      ...(emailError ? { aviso: `Invitación creada, pero no se pudo enviar el correo: ${emailError}` } : {}),
     };
   }
 
@@ -136,13 +143,20 @@ export class InvitacionService {
     });
     const nombreInvitador = invitador?.usuario ?? 'Un administrador';
 
-    await this.emailService.enviarInvitacion(actualizada.correo, token, nombreInvitador);
+    let emailError: string | null = null;
+    try {
+      await this.emailService.enviarInvitacion(actualizada.correo, token, nombreInvitador);
+    } catch (err: any) {
+      this.logger.warn(`No se pudo reenviar email a ${actualizada.correo}: ${err?.message ?? err}`);
+      emailError = err?.message ?? 'Error al enviar el correo';
+    }
 
     return {
       id: actualizada.id,
       correo: actualizada.correo,
       expiraEn: actualizada.expiraEn,
       createdAt: actualizada.createdAt,
+      ...(emailError ? { aviso: `No se pudo reenviar el correo: ${emailError}` } : {}),
     };
   }
 }
