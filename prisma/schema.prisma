@@ -77,10 +77,12 @@ model RolPermiso {
 // ---------- Usuarios ----------
 
 model User {
-  id               String   @id
+  id               String   @id @default(uuid())
   usuario          String
   correo           String   @unique
-  claveHash        String
+  claveHash        String?
+  provider         String?
+  providerId       String?
   rolId            String
   rol              Rol      @relation(fields: [rolId], references: [id])
   nombres          String?
@@ -126,6 +128,8 @@ model Proyecto {
   nombre        String
   descripcion   String?
   cliente       String?
+  canalAreaId   String?
+  canalArea     CanalArea? @relation(fields: [canalAreaId], references: [id], onDelete: SetNull)
   status        String?
   prioridad     String?
   columnaId     String
@@ -259,6 +263,17 @@ model Cliente {
   createdAt DateTime @default(now())
 
   @@map("clientes")
+}
+
+// ---------- Canal / Área ----------
+
+model CanalArea {
+  id        String   @id
+  nombre    String   @unique
+  createdAt DateTime @default(now())
+  proyectos Proyecto[]
+
+  @@map("canal_areas")
 }
 
 // ---------- Documentos ----------

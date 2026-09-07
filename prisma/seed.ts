@@ -149,7 +149,20 @@ async function main() {
     update: { ...admin, claveHash: admin.claveHash },
   });
 
-  console.log('Seed completado: roles, permisos, columnas y admin listos.');
+  // ---- Canal / Área ----
+  const CANALES_AREA = [
+    { id: 'empresas', nombre: 'Empresas' },
+    { id: 'personas', nombre: 'Personas' },
+  ];
+  for (const ca of CANALES_AREA) {
+    await prisma.canalArea.upsert({
+      where: { id: ca.id },
+      create: ca,
+      update: ca,
+    });
+  }
+
+  console.log('Seed completado: roles, permisos, columnas, canales/área y admin listos.');
 }
 
 main()

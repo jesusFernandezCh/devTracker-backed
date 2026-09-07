@@ -16,6 +16,10 @@ export class CrearProyectoDto {
 
   @IsOptional()
   @IsString()
+  canalAreaId?: string;
+
+  @IsOptional()
+  @IsString()
   status?: string;
 
   @IsOptional()
@@ -52,6 +56,10 @@ export class ActualizarProyectoDto {
   @IsOptional()
   @IsString()
   cliente?: string;
+
+  @IsOptional()
+  @IsString()
+  canalAreaId?: string;
 
   @IsOptional()
   @IsString()

@@ -3,6 +3,7 @@ import type { Request, Response } from 'express';
 import { ConfigService } from '@nestjs/config';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
+import { SocialLoginDto } from './dto/social-login.dto';
 import { CurrentUser, Public } from '../common/decorators/auth.decorators';
 import type { JwtPayload } from '../common/decorators/auth.decorators';
 
@@ -36,6 +37,15 @@ export class AuthController {
   @Post('login')
   async login(@Body() dto: LoginDto, @Res({ passthrough: true }) res: Response) {
     const sesion = await this.authService.login(dto);
+    this.setRefreshCookie(res, sesion.refreshToken);
+    return { accessToken: sesion.accessToken, user: sesion.user };
+  }
+
+  @Public()
+  @HttpCode(200)
+  @Post('social')
+  async socialLogin(@Body() dto: SocialLoginDto, @Res({ passthrough: true }) res: Response) {
+    const sesion = await this.authService.loginSocial(dto);
     this.setRefreshCookie(res, sesion.refreshToken);
     return { accessToken: sesion.accessToken, user: sesion.user };
   }

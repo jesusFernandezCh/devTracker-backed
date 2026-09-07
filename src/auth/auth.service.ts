@@ -1,10 +1,11 @@
-import { Injectable, UnauthorizedException, Logger } from '@nestjs/common';
+import { Injectable, UnauthorizedException, Logger, ConflictException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { createHash, randomBytes } from 'node:crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { PasswordService } from './password.service';
 import { LoginDto } from './dto/login.dto';
+import { SocialLoginDto } from './dto/social-login.dto';
 import type { JwtPayload } from '../common/decorators/auth.decorators';
 import { User, Accion, Recurso } from '@prisma/client';
 
@@ -50,20 +51,66 @@ export class AuthService {
       throw new UnauthorizedException('Credenciales incorrectas');
     }
 
-    const valida = await this.password.verify(dto.clave, usuario.claveHash);
+    const valida = await this.password.verify(dto.clave, usuario.claveHash!);
     if (!valida) {
       throw new UnauthorizedException('Credenciales incorrectas');
     }
 
     // Upgrade silencioso: las claves legacy (SHA-256/base64 del frontend) se
     // re-hashean a scrypt en el primer login correcto.
-    if (this.password.esLegacy(usuario.claveHash)) {
+    if (this.password.esLegacy(usuario.claveHash!)) {
       const nuevoHash = await this.password.hash(dto.clave);
       await this.prisma.user.update({
         where: { id: usuario.id },
         data: { claveHash: nuevoHash },
       });
       this.logger.log(`Clave legacy migrada a scrypt para ${usuario.correo}`);
+    }
+
+    return this.generarSesion(usuario);
+  }
+
+  async loginSocial(dto: SocialLoginDto) {
+    const rolDefaultId = 'usuario';
+
+    // Buscar usuario existente por provider+providerId o por correo
+    let usuario = await this.prisma.user.findFirst({
+      where: {
+        OR: [
+          { provider: dto.provider, providerId: dto.providerId },
+          { correo: dto.correo },
+        ],
+      },
+      include: { rol: true },
+    });
+
+    if (usuario) {
+      // Si el usuario existe por correo pero con contraseña, vincular el provider
+      if (!usuario.provider) {
+        usuario = await this.prisma.user.update({
+          where: { id: usuario.id },
+          data: { provider: dto.provider, providerId: dto.providerId, foto: dto.foto ?? usuario.foto },
+          include: { rol: true },
+        });
+      }
+    } else {
+      // Crear nuevo usuario social (sin contraseña)
+      const usuarioBase = dto.usuario || dto.correo.split('@')[0];
+      usuario = await this.prisma.user.create({
+        data: {
+          usuario: usuarioBase,
+          correo: dto.correo,
+          provider: dto.provider,
+          providerId: dto.providerId,
+          foto: dto.foto,
+          rolId: rolDefaultId,
+        },
+        include: { rol: true },
+      });
+    }
+
+    if (!usuario) {
+      throw new ConflictException('No se pudo crear la sesión social');
     }
 
     return this.generarSesion(usuario);

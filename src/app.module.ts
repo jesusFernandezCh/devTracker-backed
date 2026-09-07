@@ -12,6 +12,7 @@ import { EquipoModule } from './equipo/equipo.module';
 import { NotificacionesModule } from './notificaciones/notificaciones.module';
 import { ChatModule } from './chat/chat.module';
 import { ClientesModule } from './clientes/clientes.module';
+import { CanalAreaModule } from './canal-area/canal-area.module';
 import { DocumentosModule } from './documentos/documentos.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
@@ -31,6 +32,7 @@ import { AppService } from './app.service';
     NotificacionesModule,
     ChatModule,
     ClientesModule,
+    CanalAreaModule,
     DocumentosModule,
   ],
   controllers: [AppController],

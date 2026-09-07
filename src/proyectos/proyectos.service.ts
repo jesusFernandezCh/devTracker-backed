@@ -10,7 +10,7 @@ export class ProyectosService {
   async findAll() {
     const proyectos = await this.prisma.proyecto.findMany({
       orderBy: { createdAt: 'asc' },
-      include: { columna: true },
+      include: { columna: true, canalArea: true },
     });
     return proyectos.map((p) => this.aProyecto(p));
   }
@@ -18,7 +18,7 @@ export class ProyectosService {
   async findOne(id: string) {
     const proyecto = await this.prisma.proyecto.findUnique({
       where: { id },
-      include: { columna: true, equipos: true },
+      include: { columna: true, equipos: true, canalArea: true },
     });
     if (!proyecto) throw new NotFoundException('Proyecto no encontrado');
     return {
@@ -35,6 +35,7 @@ export class ProyectosService {
         nombre: dto.nombre,
         descripcion: dto.descripcion,
         cliente: dto.cliente,
+        canalAreaId: dto.canalAreaId || null,
         status: dto.status,
         prioridad: dto.prioridad,
         columnaId: dto.columnaId,
@@ -42,7 +43,7 @@ export class ProyectosService {
         fechaHasta: dto.fechaHasta,
         documentacion: dto.documentacion,
       },
-      include: { columna: true },
+      include: { columna: true, canalArea: true },
     });
     return this.aProyecto(proyecto);
   }
@@ -56,6 +57,7 @@ export class ProyectosService {
         nombre: dto.nombre,
         descripcion: dto.descripcion,
         cliente: dto.cliente,
+        canalAreaId: dto.canalAreaId !== undefined ? (dto.canalAreaId || null) : undefined,
         status: dto.status,
         prioridad: dto.prioridad,
         columnaId: dto.columnaId,
@@ -63,7 +65,7 @@ export class ProyectosService {
         fechaHasta: dto.fechaHasta,
         documentacion: dto.documentacion,
       },
-      include: { columna: true },
+      include: { columna: true, canalArea: true },
     });
     return this.aProyecto(proyecto);
   }
@@ -78,6 +80,8 @@ export class ProyectosService {
     nombre: string;
     descripcion: string | null;
     cliente: string | null;
+    canalAreaId: string | null;
+    canalArea: { id: string; nombre: string } | null;
     status: string | null;
     prioridad: string | null;
     columnaId: string;
@@ -92,6 +96,8 @@ export class ProyectosService {
       nombre: p.nombre,
       descripcion: p.descripcion ?? undefined,
       cliente: p.cliente ?? undefined,
+      canalAreaId: p.canalAreaId ?? undefined,
+      canalAreaNombre: p.canalArea?.nombre ?? undefined,
       status: p.status ?? undefined,
       prioridad: p.prioridad ?? undefined,
       columnaId: p.columnaId,
