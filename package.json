@@ -20,7 +20,7 @@
     "db:migrate:deploy": "prisma migrate deploy",
     "db:seed": "prisma db seed",
     "db:generate": "prisma generate",
-    "test:cov": "jest --coverage",
+    "deploy": "npm run build && git add -A && git commit -m \"deploy: build automático\" && git push origin main",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json"
   },
