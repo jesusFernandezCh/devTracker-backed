@@ -9,19 +9,30 @@ import {
   Post,
 } from '@nestjs/common';
 import { UsuariosService } from './usuarios.service';
-import { CrearUsuarioDto, ActualizarUsuarioDto } from './dto/usuario.dto';
+import { CrearUsuarioDto, ActualizarUsuarioDto, AprobarUsuarioDto } from './dto/usuario.dto';
 import { RequirePermiso } from '../common/decorators/permisos.decorator';
-import { CurrentUser } from '../common/decorators/auth.decorators';
+import { CurrentUser, Public } from '../common/decorators/auth.decorators';
 import type { JwtPayload } from '../common/decorators/auth.decorators';
+import { InvitacionService } from '../auth/invitacion.service';
+import { InvitarUsuarioDto } from '../auth/dto';
 
 @Controller('usuarios')
 export class UsuariosController {
-  constructor(private readonly usuariosService: UsuariosService) {}
+  constructor(
+    private readonly usuariosService: UsuariosService,
+    private readonly invitacionService: InvitacionService,
+  ) {}
 
   @Get()
   @RequirePermiso('leer', 'usuarios')
   findAll() {
     return this.usuariosService.findAll();
+  }
+
+  @Get('invitaciones')
+  @RequirePermiso('leer', 'usuarios')
+  listarInvitaciones() {
+    return this.invitacionService.findAll();
   }
 
   @Get(':id')
@@ -36,10 +47,35 @@ export class UsuariosController {
     return this.usuariosService.crear(dto);
   }
 
+  @Post('invitar')
+  @RequirePermiso('crear', 'usuarios')
+  async invitar(@Body() dto: InvitarUsuarioDto, @CurrentUser() user: JwtPayload) {
+    return this.invitacionService.invitar(dto.correo, dto.rolId, user.sub);
+  }
+
+  @Post('invitaciones/:id/reenviar')
+  @RequirePermiso('editar', 'usuarios')
+  async reenviarInvitacion(@Param('id') id: string) {
+    return this.invitacionService.reenviar(id);
+  }
+
   @Patch(':id')
   @RequirePermiso('editar', 'usuarios')
   actualizar(@Param('id') id: string, @Body() dto: ActualizarUsuarioDto) {
     return this.usuariosService.actualizar(id, dto);
+  }
+
+  @Patch(':id/aprobar')
+  @RequirePermiso('editar', 'usuarios')
+  aprobar(@Param('id') id: string, @Body() dto: AprobarUsuarioDto) {
+    return this.usuariosService.aprobar(id, dto.rolId);
+  }
+
+  @Delete('invitaciones/:id')
+  @RequirePermiso('eliminar', 'usuarios')
+  @HttpCode(204)
+  async cancelarInvitacion(@Param('id') id: string) {
+    await this.invitacionService.cancelar(id);
   }
 
   @Delete(':id')

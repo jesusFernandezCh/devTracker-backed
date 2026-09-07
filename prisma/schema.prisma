@@ -49,6 +49,12 @@ enum TipoNotificacion {
   error
 }
 
+enum EstatusUsuario {
+  pendiente
+  activo
+  suspendido
+}
+
 // ---------- RBAC ----------
 
 // Rol dinámico. `sistema` marca los roles sembrados (el super-admin no se renombra ni elimina).
@@ -77,14 +83,15 @@ model RolPermiso {
 // ---------- Usuarios ----------
 
 model User {
-  id               String   @id @default(uuid())
+  id               String           @id @default(uuid())
   usuario          String
-  correo           String   @unique
-  claveHash        String?
-  provider         String?
-  providerId       String?
+  correo           String           @unique
+  claveHash        String
   rolId            String
-  rol              Rol      @relation(fields: [rolId], references: [id])
+  rol              Rol              @relation(fields: [rolId], references: [id])
+  estatus          EstatusUsuario   @default(activo)
+  proveedor        String?
+  usuarioExternoId String?
   nombres          String?
   apellidos        String?
   cedula           String?
@@ -94,7 +101,7 @@ model User {
   // Foto de perfil (data URL) y curriculum (JSON), igual que el modelo actual.
   foto             String?
   curriculum       Json?
-  createdAt        DateTime @default(now())
+  createdAt        DateTime         @default(now())
 
   plannings         Planning[]
   mensajes          Mensaje[]        @relation("MensajeAutor")
@@ -104,6 +111,7 @@ model User {
   equipos           EquipoProyecto[]
   lecturas          MensajeLeido[]
   documentos        Documento[]
+  eventosCalendario EventoCalendario[]
 
   @@unique([usuario, correo])
   @@map("usuarios")
@@ -293,4 +301,38 @@ model Documento {
 
   @@index([proyectoId])
   @@map("documentos")
+}
+
+// ---------- Eventos de Calendario ----------
+
+model EventoCalendario {
+  id          String   @id @default(uuid())
+  titulo      String
+  descripcion String?
+  fechaInicio DateTime
+  fechaFin    DateTime
+  todoElDia   Boolean  @default(true)
+  categoria   String   @default("general")
+  color       String?  @default("#6366F1")
+  usuarioId   String
+  usuario     User     @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+
+  @@index([usuarioId])
+  @@map("eventos_calendario")
+}
+
+// ---------- Registro / Invitaciones ----------
+
+model Invitacion {
+  id          String    @id @default(uuid())
+  correo      String    @unique
+  token       String    @unique
+  rolId       String?
+  invitadoPor String
+  expiraEn    DateTime
+  usadoEn     DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@map("invitaciones")
 }

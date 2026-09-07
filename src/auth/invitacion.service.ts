@@ -1,0 +1,162 @@
+import {
+  BadRequestException,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
+import { randomBytes } from 'node:crypto';
+import { PrismaService } from '../prisma/prisma.service';
+import { EmailService } from './email.service';
+
+const INVITACION_TTL_HORAS = 48;
+
+@Injectable()
+export class InvitacionService {
+  private readonly logger = new Logger(InvitacionService.name);
+
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly emailService: EmailService,
+  ) {}
+
+  async invitar(correo: string, rolId: string | undefined, invitadoPorId: string) {
+    const usuario = await this.prisma.user.findUnique({
+      where: { correo },
+    });
+    if (usuario) {
+      throw new BadRequestException('El correo ya está registrado');
+    }
+
+    const existente = await this.prisma.invitacion.findUnique({
+      where: { correo },
+    });
+    if (existente && !existente.usadoEn && existente.expiraEn.getTime() > Date.now()) {
+      throw new BadRequestException('Ya existe una invitación pendiente para este correo');
+    }
+
+    const token = randomBytes(32).toString('hex');
+    const expiraEn = new Date(Date.now() + INVITACION_TTL_HORAS * 60 * 60 * 1000);
+
+    const invitador = await this.prisma.user.findUnique({
+      where: { id: invitadoPorId },
+    });
+    const nombreInvitador = invitador?.usuario ?? 'Un administrador';
+
+    let emailError: string | null = null;
+    try {
+      await this.emailService.enviarInvitacion(correo, token, nombreInvitador);
+    } catch (err: any) {
+      this.logger.warn(`No se pudo enviar email a ${correo}: ${err?.message ?? err}`);
+      emailError = err?.message ?? 'Error al enviar el correo';
+    }
+
+    const invitacion = await this.prisma.invitacion.upsert({
+      where: { correo },
+      create: {
+        correo,
+        token,
+        rolId,
+        invitadoPor: invitadoPorId,
+        expiraEn,
+      },
+      update: {
+        token,
+        rolId,
+        invitadoPor: invitadoPorId,
+        expiraEn,
+        usadoEn: null,
+      },
+    });
+
+    return {
+      id: invitacion.id,
+      correo: invitacion.correo,
+      expiraEn: invitacion.expiraEn,
+      createdAt: invitacion.createdAt,
+      ...(emailError ? { aviso: `Invitación creada, pero no se pudo enviar el correo: ${emailError}` } : {}),
+    };
+  }
+
+  async verificarToken(token: string) {
+    const invitacion = await this.prisma.invitacion.findUnique({
+      where: { token },
+    });
+    if (!invitacion) {
+      throw new NotFoundException('Invitación no válida');
+    }
+    if (invitacion.usadoEn) {
+      throw new BadRequestException('Esta invitación ya fue utilizada');
+    }
+    if (invitacion.expiraEn.getTime() < Date.now()) {
+      throw new BadRequestException('Esta invitación ha expirado');
+    }
+
+    return {
+      correo: invitacion.correo,
+      rolId: invitacion.rolId,
+    };
+  }
+
+  async marcarUsado(token: string): Promise<void> {
+    await this.prisma.invitacion.update({
+      where: { token },
+      data: { usadoEn: new Date() },
+    });
+  }
+
+  async findAll() {
+    return this.prisma.invitacion.findMany({
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async cancelar(id: string) {
+    const invitacion = await this.prisma.invitacion.findUnique({ where: { id } });
+    if (!invitacion) {
+      throw new NotFoundException('Invitación no encontrada');
+    }
+    if (invitacion.usadoEn) {
+      throw new BadRequestException('No se puede cancelar una invitación ya utilizada');
+    }
+    await this.prisma.invitacion.delete({ where: { id } });
+  }
+
+  async reenviar(id: string) {
+    const invitacion = await this.prisma.invitacion.findUnique({ where: { id } });
+    if (!invitacion) {
+      throw new NotFoundException('Invitación no encontrada');
+    }
+    if (invitacion.usadoEn) {
+      throw new BadRequestException('No se puede reenviar una invitación ya utilizada');
+    }
+
+    const token = randomBytes(32).toString('hex');
+    const expiraEn = new Date(Date.now() + INVITACION_TTL_HORAS * 60 * 60 * 1000);
+
+    const actualizada = await this.prisma.invitacion.update({
+      where: { id },
+      data: { token, expiraEn },
+    });
+
+    const invitador = await this.prisma.user.findUnique({
+      where: { id: actualizada.invitadoPor },
+    });
+    const nombreInvitador = invitador?.usuario ?? 'Un administrador';
+
+    let emailError: string | null = null;
+    try {
+      await this.emailService.enviarInvitacion(actualizada.correo, token, nombreInvitador);
+    } catch (err: any) {
+      this.logger.warn(`No se pudo reenviar email a ${actualizada.correo}: ${err?.message ?? err}`);
+      emailError = err?.message ?? 'Error al enviar el correo';
+    }
+
+    return {
+      id: actualizada.id,
+      correo: actualizada.correo,
+      expiraEn: actualizada.expiraEn,
+      createdAt: actualizada.createdAt,
+      ...(emailError ? { aviso: `No se pudo reenviar el correo: ${emailError}` } : {}),
+    };
+  }
+}

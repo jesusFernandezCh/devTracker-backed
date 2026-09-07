@@ -7,6 +7,7 @@ import {
 import { randomUUID } from 'node:crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { PasswordService } from '../auth/password.service';
+import { EmailService } from '../auth/email.service';
 import { CrearUsuarioDto, ActualizarUsuarioDto } from './dto/usuario.dto';
 import { ROL_SUPER_ADMIN_ID } from '../constants';
 
@@ -17,6 +18,7 @@ export class UsuariosService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly password: PasswordService,
+    private readonly emailService: EmailService,
   ) {}
 
   async findAll() {
@@ -47,6 +49,7 @@ export class UsuariosService {
         correo: dto.correo,
         claveHash: await this.password.hash(dto.clave),
         rolId: dto.rolId,
+        estatus: 'activo',
         nombres: dto.nombres,
         apellidos: dto.apellidos,
         cedula: dto.cedula,
@@ -82,6 +85,7 @@ export class UsuariosService {
         correo: dto.correo,
         claveHash,
         rolId: dto.rolId,
+        estatus: dto.estatus as any,
         nombres: dto.nombres,
         apellidos: dto.apellidos,
         cedula: dto.cedula,
@@ -93,6 +97,30 @@ export class UsuariosService {
       },
       include: { rol: true },
     });
+
+    if (dto.estatus === 'activo' && actual.estatus !== 'activo') {
+      await this.emailService.enviarBienvenida(usuario.correo, usuario.usuario);
+    }
+
+    return this.aPublico(usuario);
+  }
+
+  async aprobar(id: string, rolId: string) {
+    await this.validarRol(rolId);
+    const actual = await this.prisma.user.findUnique({ where: { id } });
+    if (!actual) throw new NotFoundException('Usuario no encontrado');
+    if (actual.estatus === 'activo') {
+      throw new BadRequestException('El usuario ya está activo');
+    }
+
+    const usuario = await this.prisma.user.update({
+      where: { id },
+      data: { estatus: 'activo', rolId },
+      include: { rol: true },
+    });
+
+    await this.emailService.enviarBienvenida(usuario.correo, usuario.usuario);
+
     return this.aPublico(usuario);
   }
 
@@ -134,6 +162,8 @@ export class UsuariosService {
     usuario: string;
     correo: string;
     rolId: string;
+    estatus: string;
+    proveedor: string | null;
     nombres: string | null;
     apellidos: string | null;
     cedula: string | null;
@@ -151,6 +181,8 @@ export class UsuariosService {
       correo: u.correo,
       rolId: u.rolId,
       rol: u.rol.nombre,
+      estatus: u.estatus,
+      proveedor: u.proveedor,
       nombres: u.nombres,
       apellidos: u.apellidos,
       cedula: u.cedula,

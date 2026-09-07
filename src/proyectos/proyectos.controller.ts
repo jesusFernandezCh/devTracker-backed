@@ -11,10 +11,14 @@ import {
 import { ProyectosService } from './proyectos.service';
 import { ActualizarProyectoDto, CrearProyectoDto } from './dto/proyecto.dto';
 import { RequirePermiso } from '../common/decorators/permisos.decorator';
+import { ChatGateway } from '../chat/chat.gateway';
 
 @Controller('proyectos')
 export class ProyectosController {
-  constructor(private readonly proyectosService: ProyectosService) {}
+  constructor(
+    private readonly proyectosService: ProyectosService,
+    private readonly chatGateway: ChatGateway,
+  ) {}
 
   @Get()
   @RequirePermiso('leer', 'proyectos')
@@ -30,14 +34,18 @@ export class ProyectosController {
 
   @Post()
   @RequirePermiso('crear', 'proyectos')
-  crear(@Body() dto: CrearProyectoDto) {
-    return this.proyectosService.crear(dto);
+  async crear(@Body() dto: CrearProyectoDto) {
+    const proyecto = await this.proyectosService.crear(dto);
+    this.chatGateway.emitirProyectoCreado(proyecto);
+    return proyecto;
   }
 
   @Patch(':id')
   @RequirePermiso('editar', 'proyectos')
-  actualizar(@Param('id') id: string, @Body() dto: ActualizarProyectoDto) {
-    return this.proyectosService.actualizar(id, dto);
+  async actualizar(@Param('id') id: string, @Body() dto: ActualizarProyectoDto) {
+    const proyecto = await this.proyectosService.actualizar(id, dto);
+    this.chatGateway.emitirProyectoActualizado(proyecto);
+    return proyecto;
   }
 
   @Delete(':id')
@@ -45,5 +53,6 @@ export class ProyectosController {
   @HttpCode(204)
   async eliminar(@Param('id') id: string) {
     await this.proyectosService.eliminar(id);
+    this.chatGateway.emitirProyectoEliminado(id);
   }
 }

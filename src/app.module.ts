@@ -14,6 +14,7 @@ import { ChatModule } from './chat/chat.module';
 import { ClientesModule } from './clientes/clientes.module';
 import { CanalAreaModule } from './canal-area/canal-area.module';
 import { DocumentosModule } from './documentos/documentos.module';
+import { EventosModule } from './eventos/eventos.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 
@@ -34,6 +35,7 @@ import { AppService } from './app.service';
     ClientesModule,
     CanalAreaModule,
     DocumentosModule,
+    EventosModule,
   ],
   controllers: [AppController],
   providers: [AppService],

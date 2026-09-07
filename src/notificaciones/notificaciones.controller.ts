@@ -48,4 +48,10 @@ export class NotificacionesController {
   async eliminar(@Param('id') id: string, @CurrentUser() user: JwtPayload) {
     await this.notificacionesService.eliminar(id, user.sub);
   }
+
+  @Delete()
+  @HttpCode(204)
+  async eliminarTodas(@CurrentUser() user: JwtPayload) {
+    await this.notificacionesService.eliminarTodas(user.sub);
+  }
 }

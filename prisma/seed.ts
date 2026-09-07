@@ -142,6 +142,7 @@ async function main() {
     correo: 'admin@devtracker.app',
     claveHash: hashLegacy('admin123'),
     rolId: 'super-administrador',
+    estatus: 'activo' as const,
   };
   await prisma.user.upsert({
     where: { id: adminId },
