@@ -5,14 +5,20 @@ import { Resend } from 'resend';
 @Injectable()
 export class EmailService {
   private readonly logger = new Logger(EmailService.name);
-  private readonly resend: Resend;
+  private readonly resend: Resend | null;
   private readonly frontendUrl: string;
   private readonly fromAddress: string;
 
   constructor(private readonly config: ConfigService) {
     this.frontendUrl = this.config.get<string>('FRONTEND_URL') ?? 'http://localhost:4200';
     this.fromAddress = this.config.get<string>('RESEND_FROM') ?? 'DevTracker <onboarding@resend.dev>';
-    this.resend = new Resend(this.config.get<string>('RESEND_API_KEY'));
+    const apiKey = this.config.get<string>('RESEND_API_KEY');
+    if (apiKey) {
+      this.resend = new Resend(apiKey);
+    } else {
+      this.logger.warn('RESEND_API_KEY no configurado — los correos no se enviarán');
+      this.resend = null;
+    }
   }
 
   async enviarInvitacion(
@@ -20,6 +26,11 @@ export class EmailService {
     token: string,
     nombreInvitador: string,
   ): Promise<void> {
+    if (!this.resend) {
+      this.logger.warn(`Correo no enviado (RESEND_API_KEY no configurado): invitación a ${correo}`);
+      return;
+    }
+
     const enlace = `${this.frontendUrl}/registro?token=${token}&correo=${encodeURIComponent(correo)}`;
 
     const html = `
@@ -62,6 +73,11 @@ export class EmailService {
   }
 
   async enviarBienvenida(correo: string, usuario: string): Promise<void> {
+    if (!this.resend) {
+      this.logger.warn(`Correo no enviado (RESEND_API_KEY no configurado): bienvenida a ${correo}`);
+      return;
+    }
+
     const html = `
       <div style="font-family: Arial, sans-serif; max-width: 480px; margin: 0 auto; padding: 32px;">
         <div style="text-align: center; margin-bottom: 24px;">
