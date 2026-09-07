@@ -79,15 +79,6 @@ export class AuthController {
 
   @Public()
   @HttpCode(200)
-  @Post('social')
-  async socialLogin(@Body() dto: SocialLoginDto, @Res({ passthrough: true }) res: Response) {
-    const sesion = await this.authService.loginSocial(dto);
-    this.setRefreshCookie(res, sesion.refreshToken);
-    return { accessToken: sesion.accessToken, user: sesion.user };
-  }
-
-  @Public()
-  @HttpCode(200)
   @Post('refresh')
   async refresh(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
     const token = req.cookies?.[this.authService.refreshCookieName] as string | undefined;
