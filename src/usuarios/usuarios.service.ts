@@ -24,7 +24,7 @@ export class UsuariosService {
   async findAll() {
     const usuarios = await this.prisma.user.findMany({
       orderBy: { usuario: 'asc' },
-      include: { rol: true },
+      include: { rol: true, persona: true },
     });
     return usuarios.map((u) => this.aPublico(u));
   }
@@ -32,7 +32,7 @@ export class UsuariosService {
   async findOne(id: string) {
     const usuario = await this.prisma.user.findUnique({
       where: { id },
-      include: { rol: true },
+      include: { rol: true, persona: true },
     });
     if (!usuario) throw new NotFoundException('Usuario no encontrado');
     return this.aPublico(usuario);
@@ -50,16 +50,20 @@ export class UsuariosService {
         claveHash: await this.password.hash(dto.clave),
         rolId: dto.rolId,
         estatus: 'activo',
-        nombres: dto.nombres,
-        apellidos: dto.apellidos,
-        cedula: dto.cedula,
-        telefono: dto.telefono,
-        telefonoContacto: dto.telefonoContacto,
-        direccion: dto.direccion,
-        foto: dto.foto,
-        curriculum: dto.curriculum as object | undefined,
+        persona: {
+          create: {
+            nombres: dto.nombres,
+            apellidos: dto.apellidos,
+            cedula: dto.cedula,
+            telefono: dto.telefono,
+            telefonoContacto: dto.telefonoContacto,
+            direccion: dto.direccion,
+            foto: dto.foto,
+            curriculum: dto.curriculum as object | undefined,
+          },
+        },
       },
-      include: { rol: true },
+      include: { rol: true, persona: true },
     });
     return this.aPublico(usuario);
   }
@@ -86,16 +90,8 @@ export class UsuariosService {
         claveHash,
         rolId: dto.rolId,
         estatus: dto.estatus as any,
-        nombres: dto.nombres,
-        apellidos: dto.apellidos,
-        cedula: dto.cedula,
-        telefono: dto.telefono,
-        telefonoContacto: dto.telefonoContacto,
-        direccion: dto.direccion,
-        foto: dto.foto,
-        curriculum: dto.curriculum as object | undefined,
       },
-      include: { rol: true },
+      include: { rol: true, persona: true },
     });
 
     if (dto.estatus === 'activo' && actual.estatus !== 'activo') {
@@ -116,7 +112,7 @@ export class UsuariosService {
     const usuario = await this.prisma.user.update({
       where: { id },
       data: { estatus: 'activo', rolId },
-      include: { rol: true },
+      include: { rol: true, persona: true },
     });
 
     await this.emailService.enviarBienvenida(usuario.correo, usuario.usuario);
@@ -164,16 +160,18 @@ export class UsuariosService {
     rolId: string;
     estatus: string;
     proveedor: string | null;
-    nombres: string | null;
-    apellidos: string | null;
-    cedula: string | null;
-    telefono: string | null;
-    telefonoContacto: string | null;
-    direccion: string | null;
-    foto: string | null;
-    curriculum: unknown;
     createdAt: Date;
     rol: { id: string; nombre: string };
+    persona: {
+      nombres: string | null;
+      apellidos: string | null;
+      cedula: string | null;
+      telefono: string | null;
+      telefonoContacto: string | null;
+      direccion: string | null;
+      foto: string | null;
+      curriculum: unknown;
+    } | null;
   }) {
     return {
       id: u.id,
@@ -183,14 +181,14 @@ export class UsuariosService {
       rol: u.rol.nombre,
       estatus: u.estatus,
       proveedor: u.proveedor,
-      nombres: u.nombres,
-      apellidos: u.apellidos,
-      cedula: u.cedula,
-      telefono: u.telefono,
-      telefonoContacto: u.telefonoContacto,
-      direccion: u.direccion,
-      foto: u.foto,
-      curriculum: u.curriculum,
+      nombres: u.persona?.nombres ?? null,
+      apellidos: u.persona?.apellidos ?? null,
+      cedula: u.persona?.cedula ?? null,
+      telefono: u.persona?.telefono ?? null,
+      telefonoContacto: u.persona?.telefonoContacto ?? null,
+      direccion: u.persona?.direccion ?? null,
+      foto: u.persona?.foto ?? null,
+      curriculum: u.persona?.curriculum ?? null,
       createdAt: u.createdAt,
       esSuperAdmin: u.rolId === ROL_SUPER_ADMIN_ID,
     };

@@ -6,6 +6,7 @@ import { randomUUID } from 'node:crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { PasswordService } from './password.service';
 import { LoginDto, RegistroDto } from './dto';
+import { ActualizarPerfilDto } from '../usuarios/dto/usuario.dto';
 import { InvitacionService } from './invitacion.service';
 import type { JwtPayload } from '../common/decorators/auth.decorators';
 import { User, Accion, Recurso } from '@prisma/client';
@@ -177,9 +178,13 @@ export class AuthService {
         estatus: 'pendiente',
         proveedor,
         usuarioExternoId: perfil.externalId,
-        nombres: perfil.nombre,
+        persona: {
+          create: {
+            nombres: perfil.nombre,
+          },
+        },
       },
-      include: { rol: true },
+      include: { rol: true, persona: true },
     });
 
     this.logger.log(`Usuario OAuth registrado: ${usuario.correo} via ${proveedor} (pendiente)`);
@@ -226,7 +231,7 @@ export class AuthService {
   async me(userId: string) {
     const usuario = await this.prisma.user.findUnique({
       where: { id: userId },
-      include: { rol: true },
+      include: { rol: true, persona: true },
     });
     if (!usuario) {
       throw new UnauthorizedException('Usuario no encontrado');
@@ -235,6 +240,34 @@ export class AuthService {
       ...this.aPublico(usuario),
       permisos: await this.matrizDelUsuario(usuario.rolId),
     };
+  }
+
+  async actualizarPerfil(userId: string, dto: ActualizarPerfilDto) {
+    await this.prisma.persona.upsert({
+      where: { userId },
+      create: {
+        userId,
+        nombres: dto.nombres,
+        apellidos: dto.apellidos,
+        cedula: dto.cedula,
+        telefono: dto.telefono,
+        telefonoContacto: dto.telefonoContacto,
+        direccion: dto.direccion,
+        foto: dto.foto,
+        curriculum: dto.curriculum as object | undefined,
+      },
+      update: {
+        nombres: dto.nombres,
+        apellidos: dto.apellidos,
+        cedula: dto.cedula,
+        telefono: dto.telefono,
+        telefonoContacto: dto.telefonoContacto,
+        direccion: dto.direccion,
+        foto: dto.foto,
+        curriculum: dto.curriculum as object | undefined,
+      },
+    });
+    return this.me(userId);
   }
 
   async matrizDelUsuario(rolId: string): Promise<Partial<Record<Recurso, Accion[]>>> {
@@ -281,7 +314,7 @@ export class AuthService {
     return createHash('sha256').update(token).digest('hex');
   }
 
-  private aPublico(usuario: User & { rol: { id: string; nombre: string } }): UsuarioPublico {
+  private aPublico(usuario: User & { rol: { id: string; nombre: string }; persona?: { nombres: string | null; apellidos: string | null; cedula: string | null; telefono: string | null; telefonoContacto: string | null; direccion: string | null; foto: string | null; curriculum: unknown } | null }): UsuarioPublico {
     return {
       id: usuario.id,
       usuario: usuario.usuario,
@@ -290,14 +323,14 @@ export class AuthService {
       rol: usuario.rol.nombre,
       estatus: usuario.estatus,
       proveedor: usuario.proveedor,
-      nombres: usuario.nombres,
-      apellidos: usuario.apellidos,
-      cedula: usuario.cedula,
-      telefono: usuario.telefono,
-      telefonoContacto: usuario.telefonoContacto,
-      direccion: usuario.direccion,
-      foto: usuario.foto,
-      curriculum: usuario.curriculum,
+      nombres: usuario.persona?.nombres ?? null,
+      apellidos: usuario.persona?.apellidos ?? null,
+      cedula: usuario.persona?.cedula ?? null,
+      telefono: usuario.persona?.telefono ?? null,
+      telefonoContacto: usuario.persona?.telefonoContacto ?? null,
+      direccion: usuario.persona?.direccion ?? null,
+      foto: usuario.persona?.foto ?? null,
+      curriculum: usuario.persona?.curriculum ?? null,
     };
   }
 }

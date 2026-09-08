@@ -92,17 +92,9 @@ model User {
   estatus          EstatusUsuario   @default(activo)
   proveedor        String?
   usuarioExternoId String?
-  nombres          String?
-  apellidos        String?
-  cedula           String?
-  telefono         String?
-  telefonoContacto String?
-  direccion        String?
-  // Foto de perfil (data URL) y curriculum (JSON), igual que el modelo actual.
-  foto             String?
-  curriculum       Json?
   createdAt        DateTime         @default(now())
 
+  persona          Persona?
   plannings         Planning[]
   mensajes          Mensaje[]        @relation("MensajeAutor")
   mensajesRecibidos Mensaje[]        @relation("MensajeDestino")
@@ -115,6 +107,23 @@ model User {
 
   @@unique([usuario, correo])
   @@map("usuarios")
+}
+
+// Datos personales del usuario (1:1 con User).
+model Persona {
+  id              String  @id @default(uuid())
+  userId          String  @unique
+  user            User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  nombres         String?
+  apellidos       String?
+  cedula          String?
+  telefono        String?
+  telefonoContacto String?
+  direccion       String?
+  foto            String?
+  curriculum      Json?
+
+  @@map("personas")
 }
 
 // ---------- Kanban ----------

@@ -1,8 +1,9 @@
-import { Body, Controller, Get, HttpCode, Post, Query, Req, Res } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, Patch, Post, Query, Req, Res } from '@nestjs/common';
 import type { Request, Response } from 'express';
 import { ConfigService } from '@nestjs/config';
 import { AuthService } from './auth.service';
 import { LoginDto, RegistroDto, VerificarEmailDto, RegistroOAuthDto } from './dto';
+import { ActualizarPerfilDto } from '../usuarios/dto/usuario.dto';
 import { CurrentUser, Public } from '../common/decorators/auth.decorators';
 import type { JwtPayload } from '../common/decorators/auth.decorators';
 
@@ -104,6 +105,14 @@ export class AuthController {
   @Get('me')
   async me(@CurrentUser() user: JwtPayload) {
     return this.authService.me(user.sub);
+  }
+
+  @Patch('me/perfil')
+  async actualizarMiPerfil(
+    @CurrentUser() user: JwtPayload,
+    @Body() dto: ActualizarPerfilDto,
+  ) {
+    return this.authService.actualizarPerfil(user.sub, dto);
   }
 
   private async obtenerPerfilOAuth(

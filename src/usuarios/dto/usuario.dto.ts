@@ -81,7 +81,9 @@ export class ActualizarUsuarioDto {
   @IsOptional()
   @IsString()
   estatus?: string;
+}
 
+export class ActualizarPerfilDto {
   @IsOptional()
   @IsString()
   nombres?: string;
