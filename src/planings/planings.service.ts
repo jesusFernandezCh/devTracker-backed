@@ -41,14 +41,14 @@ export class PlaningsService {
         descripcion: dto.descripcion,
         usuarioId,
         tareas: {
-          create: this.tareasAcrear(dto.tareas ?? []),
+          create: this.tareasAcrear(dto.tareas ?? [], usuarioId),
         },
       },
       include: { tareas: { orderBy: { orden: 'asc' } } },
     });
   }
 
-  async actualizar(id: string, dto: ActualizarPlanningDto) {
+  async actualizar(id: string, dto: ActualizarPlanningDto, usuarioId?: string) {
     await this.existe(id);
     return this.prisma.planning.update({
       where: { id },
@@ -59,7 +59,7 @@ export class PlaningsService {
           dto.tareas !== undefined
             ? {
                 deleteMany: {},
-                create: this.tareasAcrear(dto.tareas),
+                create: this.tareasAcrear(dto.tareas, usuarioId),
               }
             : undefined,
       },
@@ -94,6 +94,7 @@ export class PlaningsService {
             complejidad: t.complejidad,
             completada: t.completada,
             orden: t.orden,
+            usuarioId,
           })),
         },
       },
@@ -101,13 +102,14 @@ export class PlaningsService {
     return this.findOne(nuevoId);
   }
 
-  private tareasAcrear(tareas: TareaDto[]) {
+  private tareasAcrear(tareas: TareaDto[], usuarioId?: string) {
     return tareas.map((t, index) => ({
       id: t.id ?? randomUUID(),
       tarea: t.tarea,
       complejidad: t.complejidad as Complejidad,
       completada: t.completada ?? false,
       orden: index,
+      usuarioId: usuarioId ?? null,
     }));
   }
 

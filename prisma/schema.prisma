@@ -96,6 +96,7 @@ model User {
 
   persona          Persona?
   plannings         Planning[]
+  planningTasks    PlanningTask[]
   mensajes          Mensaje[]        @relation("MensajeAutor")
   mensajesRecibidos Mensaje[]        @relation("MensajeDestino")
   notificaciones    Notificacion[]
@@ -192,6 +193,8 @@ model PlanningTask {
   complejidad Complejidad
   completada  Boolean     @default(false)
   orden       Int         @default(0)
+  usuarioId   String?
+  usuario     User?       @relation(fields: [usuarioId], references: [id], onDelete: SetNull)
   createdAt   DateTime    @default(now())
 
   @@map("planning_tareas")

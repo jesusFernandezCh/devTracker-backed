@@ -56,8 +56,8 @@ export class PlaningsController {
 
   @Patch(':id')
   @RequirePermiso('editar', 'planning')
-  async actualizar(@Param('id') id: string, @Body() dto: ActualizarPlanningDto) {
-    const planning = await this.planingsService.actualizar(id, dto);
+  async actualizar(@Param('id') id: string, @Body() dto: ActualizarPlanningDto, @CurrentUser() user: JwtPayload) {
+    const planning = await this.planingsService.actualizar(id, dto, user.sub);
     this.chatGateway.emitirPlanningActualizado(planning, planning.proyectoId);
     return planning;
   }
