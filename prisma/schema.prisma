@@ -168,7 +168,7 @@ model Proyecto {
 // ---------- Planning / Tareas ----------
 
 model Planning {
-  id          String         @id
+  id          String         @id @default(uuid())
   // Fecha del planning como 'YYYY-MM-DD'.
   fecha       String
   proyectoId  String
