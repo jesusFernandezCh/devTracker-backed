@@ -82,7 +82,7 @@ const MATRIZ: Record<string, Partial<Record<Recurso, Accion[]>>> = {
     proyectos: todas(),
     usuarios: ['leer', 'editar', 'eliminar'], 
     roles: todas(),
-    planning: ['leer', 'editar', 'eliminar'], 
+    planning: ['leer', 'crear', 'editar', 'eliminar'], 
     calendario: todas(),
     tablero: todas(),
     reportes: todas(),
